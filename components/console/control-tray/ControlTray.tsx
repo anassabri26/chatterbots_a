@@ -20,17 +20,15 @@
 
 import cn from 'classnames';
 
-import { memo, ReactNode, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { AudioRecorder } from '../../../lib/audio-recorder';
 
 import { useLiveAPIContext } from '../../../contexts/LiveAPIContext';
 import { useUI } from '@/lib/state';
 
-export type ControlTrayProps = {
-  children?: ReactNode;
-};
+export type ControlTrayProps = {};
 
-function ControlTray({ children }: ControlTrayProps) {
+function ControlTray({}: ControlTrayProps) {
   const [audioRecorder] = useState(() => new AudioRecorder());
   const [muted, setMuted] = useState(false);
   const connectButtonRef = useRef<HTMLButtonElement>(null);
@@ -107,22 +105,22 @@ function ControlTray({ children }: ControlTrayProps) {
 
   return (
     <section className="control-tray">
-      <nav className={cn('actions-nav', { disabled: !connected })}>
-        <button
-          className={cn('action-button mic-button')}
-          onClick={() => setMuted(!muted)}
-        >
-          {!muted ? (
-            <span className="material-symbols-outlined filled">mic</span>
-          ) : (
-            <span className="material-symbols-outlined filled">mic_off</span>
-          )}
-        </button>
-        {children}
-      </nav>
-
       <div className={cn('connection-container', { connected })}>
         <div className="connection-button-container">
+          {connected && (
+            <button
+              className={cn('action-button mic-button')}
+              onClick={() => setMuted(!muted)}
+            >
+              {!muted ? (
+                <span className="material-symbols-outlined filled">mic</span>
+              ) : (
+                <span className="material-symbols-outlined filled">
+                  mic_off
+                </span>
+              )}
+            </button>
+          )}
           <button
             ref={connectButtonRef}
             className={cn('action-button connect-toggle', { connected })}
@@ -134,6 +132,9 @@ function ControlTray({ children }: ControlTrayProps) {
           </button>
           {!connected && (
             <div className="grounding-toggle-container">
+              <span className="grounding-toggle-label">
+                Search Web before answering
+              </span>
               <label
                 className="switch"
                 title={
@@ -149,7 +150,6 @@ function ControlTray({ children }: ControlTrayProps) {
                 />
                 <span className="slider round"></span>
               </label>
-              <span className="grounding-toggle-label">Google Search</span>
             </div>
           )}
         </div>

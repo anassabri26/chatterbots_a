@@ -448,24 +448,6 @@ header:hover .createButton {
   opacity: 0;
 }
 
-.actions-nav {
-  background: var(--Neutral-5);
-  border: 1px solid var(--Neutral-30);
-  border-radius: 27px;
-  display: inline-flex;
-  gap: 12px;
-  align-items: center;
-  overflow: clip;
-  padding: 10px;
-  transition: all 0.6s ease-in;
-}
-.actions-nav > * {
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  gap: 1rem;
-}
-
 @keyframes opacity-pulse {
   0% {
     opacity: 0.9;
