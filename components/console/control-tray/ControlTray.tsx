@@ -118,19 +118,6 @@ function ControlTray({ children }: ControlTrayProps) {
             <span className="material-symbols-outlined filled">mic_off</span>
           )}
         </button>
-        <button
-          className={cn('action-button grounding-button', {
-            active: useGrounding,
-          })}
-          onClick={() => setUseGrounding(!useGrounding)}
-          title={
-            useGrounding
-              ? 'Disable Google Search Grounding'
-              : 'Enable Google Search Grounding'
-          }
-        >
-          <span className="material-symbols-outlined filled">search</span>
-        </button>
         {children}
       </nav>
 
@@ -145,6 +132,26 @@ function ControlTray({ children }: ControlTrayProps) {
               {connected ? 'pause' : 'play_arrow'}
             </span>
           </button>
+          {!connected && (
+            <div className="grounding-toggle-container">
+              <label
+                className="switch"
+                title={
+                  useGrounding
+                    ? 'Disable Google Search Grounding'
+                    : 'Enable Google Search Grounding'
+                }
+              >
+                <input
+                  type="checkbox"
+                  checked={useGrounding}
+                  onChange={() => setUseGrounding(!useGrounding)}
+                />
+                <span className="slider round"></span>
+              </label>
+              <span className="grounding-toggle-label">Google Search</span>
+            </div>
+          )}
         </div>
         <span className="text-indicator">Streaming</span>
       </div>

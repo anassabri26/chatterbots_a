@@ -31,7 +31,7 @@ export default function BasicFace({
   radius = 250,
   color,
 }: BasicFaceProps) {
-  const timeoutRef = useRef<NodeJS.Timeout>(null);
+  const timeoutRef = useRef<number | null>(null);
 
   // Audio output volume
   const { volume } = useLiveAPIContext();
@@ -64,9 +64,11 @@ export default function BasicFace({
   useEffect(() => {
     if (volume > AUDIO_OUTPUT_DETECTION_THRESHOLD) {
       setIsTalking(true);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (timeoutRef.current) {
+        window.clearTimeout(timeoutRef.current);
+      }
       // Enforce a slight delay between end of audio output and setting talking state to false
-      timeoutRef.current = setTimeout(
+      timeoutRef.current = window.setTimeout(
         () => setIsTalking(false),
         TALKING_STATE_COOLDOWN_MS
       );

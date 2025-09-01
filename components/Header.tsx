@@ -22,11 +22,15 @@ export default function Header() {
   }, []);
 
   function changeAgent(agent: Agent | string) {
+    // Only update the state. The KeynoteCompanion component will handle the reconnect.
     setCurrent(agent);
   }
 
   function addNewChatterBot() {
-    addAgent(createNewAgent());
+    // Add the new agent and open the edit modal.
+    // The KeynoteCompanion component will handle disconnecting the old session.
+    const newAgent = createNewAgent();
+    addAgent(newAgent);
     setShowAgentEdit(true);
   }
 

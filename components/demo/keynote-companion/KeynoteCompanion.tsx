@@ -25,20 +25,15 @@ export default function KeynoteCompanion() {
   const user = useUser();
   const { current } = useAgent();
   const { useGrounding, showAgentEdit, showUserConfig } = useUI();
+
+  // Use refs to manage connection logic state across renders without causing re-renders.
   const isReconnectingRef = useRef(false);
+  const wasConnectedBeforeModal = useRef(false);
 
-  // This effect handles config updates and connection management based on UI state.
+  // This effect is the single source of truth for managing the connection
+  // state based on user actions and settings changes.
   useEffect(() => {
-    // If a modal is open, ensure we are disconnected.
-    if (showAgentEdit || showUserConfig) {
-      if (connected && !isReconnectingRef.current) {
-        disconnect().catch(error => {
-          console.error('Failed to disconnect on modal open:', error);
-        });
-      }
-      return; // Do not proceed to connect/reconnect logic
-    }
-
+    // 1. Define the desired configuration based on the current app state.
     const newConfig: LiveConnectConfig = {
       responseModalities: [Modality.AUDIO],
       speechConfig: {
@@ -54,49 +49,76 @@ export default function KeynoteCompanion() {
         ],
       },
     };
-
     if (useGrounding) {
       newConfig.tools = [{ googleSearch: {} }];
     }
 
-    // Check if the config has actually changed to avoid unnecessary actions.
-    const configChanged = JSON.stringify(newConfig) !== JSON.stringify(config);
+    // Always keep the config in the context up-to-date.
+    setConfig(newConfig);
 
-    if (configChanged) {
-      // If we are already connected, changing the config requires a reconnect.
-      if (connected) {
-        if (isReconnectingRef.current) {
-          // A reconnect is already in progress. The effect will re-run
-          // once it's done and pick up the latest config.
+    const configChanged = JSON.stringify(newConfig) !== JSON.stringify(config);
+    const isModalOpen = showAgentEdit || showUserConfig;
+
+    // --- Connection Logic ---
+
+    // Reusable reconnect function to handle all session restarts.
+    const handleReconnect = async () => {
+      // Use a lock to prevent concurrent reconnection attempts.
+      if (isReconnectingRef.current) return;
+      isReconnectingRef.current = true;
+      try {
+        // Disconnect first if a session is already active.
+        if (connected) {
+          await disconnect();
+        }
+
+        // It's possible a modal was opened while we were disconnecting.
+        // Check the latest state directly from the store to prevent a race condition.
+        const isModalOpenNow =
+          useUI.getState().showAgentEdit || useUI.getState().showUserConfig;
+
+        if (isModalOpenNow) {
+          // A modal is open, so we must not reconnect.
+          // The effect will run again when the modal closes and handle the reconnect.
           return;
         }
 
-        const reconnect = async () => {
-          isReconnectingRef.current = true;
-          try {
-            await disconnect();
-            await connect(newConfig);
-          } catch (error) {
-            console.error('Failed to reconnect after settings change:', error);
-            client.emit(
-              'error',
-              new ErrorEvent('error', {
-                error: error as Error,
-                message: 'Failed to apply new settings. Please try again.',
-              })
-            );
-          } finally {
-            isReconnectingRef.current = false;
-          }
-        };
-
-        // Fire and forget; error handling is inside the async function.
-        reconnect();
+        // Connect with the latest configuration.
+        await connect(newConfig);
+      } catch (error) {
+        console.error('Failed to reconnect session:', error);
+        client.emit(
+          'error',
+          new ErrorEvent('error', {
+            error: error as Error,
+            message: 'Failed to apply new settings. Please try again.',
+          })
+        );
+      } finally {
+        isReconnectingRef.current = false;
       }
+    };
 
-      // Always update the config in the context. This will trigger a re-render,
-      // but the reconnect action has already been initiated.
-      setConfig(newConfig);
+    // If a modal is open, we must be disconnected.
+    if (isModalOpen) {
+      if (connected) {
+        // Remember that we were connected so we can auto-reconnect later.
+        wasConnectedBeforeModal.current = true;
+        disconnect().catch(error => {
+          console.error('Failed to disconnect on modal open:', error);
+        });
+      }
+      return; // Stop further processing until modal is closed.
+    }
+
+    // If a modal was just closed, or if the config changed while connected,
+    // we need to restart the session.
+    if (wasConnectedBeforeModal.current || (connected && configChanged)) {
+      wasConnectedBeforeModal.current = false; // Reset the flag
+      handleReconnect().catch(e => {
+        // The internal handler should catch this, but this is an extra safeguard.
+        console.error('Unhandled error during reconnect:', e);
+      });
     }
   }, [
     user,

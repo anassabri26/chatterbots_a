@@ -396,15 +396,6 @@ header:hover .createButton {
   transition: all 0.02s ease-in-out;
 }
 
-.grounding-button.active {
-  background: var(--Blue-800);
-  color: var(--Blue-500);
-}
-
-.grounding-button.active:hover {
-  border: 1px solid var(--Blue-500);
-}
-
 .connect-toggle:focus {
   border: 2px solid var(--Neutral-20);
   outline: 2px solid var(--Neutral-80);
@@ -421,7 +412,7 @@ header:hover .createButton {
   transform: translate(-50%, 0);
   display: inline-flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
   padding-bottom: 18px;
   z-index: 12;
@@ -444,6 +435,9 @@ header:hover .createButton {
   border: 1px solid var(--Neutral-30);
   background: var(--Neutral-5);
   padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 .control-tray .connection-container .text-indicator {
   font-size: 11px;
@@ -562,6 +556,80 @@ header:hover .createButton {
 
 .grounding-references a:hover {
   text-decoration: underline;
+}
+
+/* Grounding Toggle Switch */
+.grounding-toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.grounding-toggle-label {
+  color: var(--Neutral-60);
+  font-size: 12px;
+  font-weight: 500;
+  user-select: none;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--Neutral-30);
+  -webkit-transition: 0.4s;
+  transition: 0.4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: '';
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: 0.4s;
+  transition: 0.4s;
+}
+
+input:checked + .slider {
+  background-color: var(--Blue-500);
+}
+
+input:focus + .slider {
+  outline: 2px solid var(--Neutral-80);
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(16px);
+  -ms-transform: translateX(16px);
+  transform: translateX(16px);
+}
+
+.slider.round {
+  border-radius: 24px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
 }
 
 /* Modal */

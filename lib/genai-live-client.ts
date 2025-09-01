@@ -181,53 +181,68 @@ export class GenAILiveClient {
 
   public send(parts: Part | Part[], turnComplete: boolean = true) {
     if (this._status !== 'connected' || !this.session) {
-      this.emit('error', new ErrorEvent('Client is not connected'));
+      this.emit('error', new ErrorEvent('error', { message: 'Client is not connected' }));
       return;
     }
-    this.session.sendClientContent({ turns: parts, turnComplete });
-    this.log(`client.send`, parts);
+    try {
+      this.session.sendClientContent({ turns: parts, turnComplete });
+      this.log(`client.send`, parts);
+    } catch (error) {
+      console.error('Error sending content:', error);
+      this.emit('error', new ErrorEvent('error', { error: error as Error, message: 'Failed to send content.' }));
+    }
   }
 
   public sendRealtimeInput(chunks: Array<{ mimeType: string; data: string }>) {
     if (this._status !== 'connected' || !this.session) {
-      this.emit('error', new ErrorEvent('Client is not connected'));
+      // Silently ignore if not connected, as this can be called by the audio
+      // recorder after a disconnect has been initiated.
       return;
     }
-    chunks.forEach(chunk => {
-      this.session!.sendRealtimeInput({ media: chunk });
-    });
+    try {
+      chunks.forEach(chunk => {
+        this.session!.sendRealtimeInput({ media: chunk });
+      });
 
-    let hasAudio = false;
-    let hasVideo = false;
-    for (let i = 0; i < chunks.length; i++) {
-      const ch = chunks[i];
-      if (ch.mimeType.includes('audio')) hasAudio = true;
-      if (ch.mimeType.includes('image')) hasVideo = true;
-      if (hasAudio && hasVideo) break;
+      let hasAudio = false;
+      let hasVideo = false;
+      for (let i = 0; i < chunks.length; i++) {
+        const ch = chunks[i];
+        if (ch.mimeType.includes('audio')) hasAudio = true;
+        if (ch.mimeType.includes('image')) hasVideo = true;
+        if (hasAudio && hasVideo) break;
+      }
+
+      let message = 'unknown';
+      if (hasAudio && hasVideo) message = 'audio + video';
+      else if (hasAudio) message = 'audio';
+      else if (hasVideo) message = 'video';
+      this.log(`client.realtimeInput`, message);
+    } catch (error) {
+      console.error('Error sending realtime input:', error);
+      this.emit('error', new ErrorEvent('error', { error: error as Error, message: 'Failed to send media data.' }));
     }
-
-    let message = 'unknown';
-    if (hasAudio && hasVideo) message = 'audio + video';
-    else if (hasAudio) message = 'audio';
-    else if (hasVideo) message = 'video';
-    this.log(`client.realtimeInput`, message);
   }
 
   public sendToolResponse(toolResponse: LiveClientToolResponse) {
     if (this._status !== 'connected' || !this.session) {
-      this.emit('error', new ErrorEvent('Client is not connected'));
+      this.emit('error', new ErrorEvent('error', { message: 'Client is not connected' }));
       return;
     }
-    if (
-      toolResponse.functionResponses &&
-      toolResponse.functionResponses.length
-    ) {
-      this.session.sendToolResponse({
-        functionResponses: toolResponse.functionResponses!,
-      });
+    try {
+      if (
+        toolResponse.functionResponses &&
+        toolResponse.functionResponses.length
+      ) {
+        this.session.sendToolResponse({
+          functionResponses: toolResponse.functionResponses!,
+        });
+      }
+      this.log(`client.toolResponse`, { toolResponse });
+    } catch (error) {
+      console.error('Error sending tool response:', error);
+      this.emit('error', new ErrorEvent('error', { error: error as Error, message: 'Failed to send tool response.' }));
     }
-
-    this.log(`client.toolResponse`, { toolResponse });
   }
 
   protected onMessage(message: any /* LiveServerMessage */) {
